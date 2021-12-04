@@ -24,7 +24,12 @@ const usePokemon = (): Pokemon[] | undefined => {
             const data = await resp.json()
             const pokemonData: Pokemon[] = await Promise.all(data.results.map(async (pkm: {name: string, url: string}) => {
               const pkmResp = await fetch(pkm.url)
-              return pkmResp.json()
+              const pkmJSON = await pkmResp.json();
+
+              const speciesResp = await fetch(pkmJSON.species.url)
+              pkmJSON.species.data = await speciesResp.json()
+
+              return pkmJSON
             }))
 
             db.pokemonTable.bulkPut(pokemonData)
@@ -52,18 +57,36 @@ function AppPokemon() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <div className="container-fluid">
+          <div className="row d-flex align-content-center justify-content-center">
+            {pokemons ? pokemons.map(pokemon => {
+              const flavor = pokemon.species.data.flavor_text_entries.find(entry => entry.language.name === "en")
+
+              return (
+                <div className="col-md-4 col-xl-3 mt-3" key={pokemon.id}>
+                  <div className="card">
+                    <div className="card-body">
+                      <h5 className="card-title">
+                        {pokemon.name[0].toUpperCase() + pokemon.name.slice(1)}
+                      </h5>
+                      <img
+                          className="card-img-top"
+                          src={pokemon.sprites.front_default}
+                          alt="Pokemon sprite"
+                      />
+                      {flavor ? (
+                          <pre className="card-text text-start small">
+                        {flavor.flavor_text}
+                      </pre>
+                      ): null}
+                      <a href="#" className="btn btn-primary">Go somewhere</a>
+                    </div>
+                  </div>
+                </div>
+              )
+            }): null}
+          </div>
+        </div>
       </header>
     </div>
   );
